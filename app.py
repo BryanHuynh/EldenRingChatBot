@@ -59,7 +59,12 @@ def query_elden_ring_graphql(
     )
 
     executor = GraphQLQueryExecutor(graphql_client)
-    result = executor.build_operation(root, selection=selection, args=args)
+    try:
+        result = executor.build_operation(root, selection=selection, args=args)
+    except Exception as e:
+        log.error("Error building operation: %s", e)
+        return {"success": False, "error": str(e)}
+    
     return json.dumps(result, indent=2)
 
 

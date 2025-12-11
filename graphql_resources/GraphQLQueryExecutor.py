@@ -20,12 +20,7 @@ class GraphQLQueryExecutor:
         args: dict[str, Any] = None,
     ):
         if args is not None and selection is not None:
-            validation_error = self._validate_filter_against_selection(args, selection)
-            if validation_error:
-                return {
-                    "success": False,
-                    "error": validation_error
-                }
+            self._validate_filter_against_selection(args, selection)
 
         page = 0
         items = []
@@ -60,18 +55,18 @@ class GraphQLQueryExecutor:
 
             # Check if field exists in selection
             if field not in selection:
-                return f"Filter field '{current_path}' is not in the selection. Please include it in the query selection."
+                raise ValueError(f"Filter field '{current_path}' is not in the selection. Please include it in the query selection.")
 
             # If condition is a nested dict (for filtering nested objects), validate recursively
             if isinstance(condition, dict):
                 # The selection for this field should also be a dict
                 if not isinstance(selection[field], dict):
-                    return f"Filter field '{current_path}' is trying to filter a nested object, but the selection doesn't include nested fields."
+                    raise ValueError(f"Filter field '{current_path}' is trying to filter a nested object, but the selection doesn't include nested fields.")
 
                 # Recursively validate nested filters
                 nested_error = self._validate_filter_against_selection(condition, selection[field], current_path)
                 if nested_error:
-                    return nested_error
+                    raise ValueError(nested_error)
 
         return None
 

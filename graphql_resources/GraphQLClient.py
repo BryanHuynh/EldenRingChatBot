@@ -2,6 +2,7 @@ from typing import Any, Dict, Optional
 from sgqlc.endpoint.http import HTTPEndpoint
 from sgqlc.operation import Operation
 
+
 class GraphQLClient:
     def __init__(self, endpoint):
         self.endpoint = HTTPEndpoint(endpoint)
@@ -11,9 +12,9 @@ class GraphQLClient:
             result = self.endpoint(query)
 
             if "errors" in result:
-                return {"success": False, "errors": result["errors"]}
+                raise ValueError(result["errors"])
 
             return {"success": True, "data": result.get("data", {})}
 
         except Exception as e:
-            return {"success": False, "error": str(e)}
+            raise ValueError(result["errors"])
