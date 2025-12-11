@@ -1,3 +1,6 @@
 .venv
 .env
 *.pyc
+mcp_debug.log
+*.ipynb
+__pycache__/

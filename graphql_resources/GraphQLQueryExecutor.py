@@ -1,14 +1,17 @@
 from typing import Any, Dict
 from sgqlc.operation import Operation
 
+from Logger import Logger
 from graphql_resources import GraphQLClient
 from graphql_resources.my_schema import Query
 from rapidfuzz import fuzz, process
+import math
 
 
 class GraphQLQueryExecutor:
     def __init__(self, client: GraphQLClient):
         self._client = client
+        self.log = Logger()
 
     def build_operation(
         self,
@@ -16,7 +19,16 @@ class GraphQLQueryExecutor:
         selection: Dict[str, Any] = None,
         args: dict[str, Any] = None,
     ):
+        if args is not None and selection is not None:
+            validation_error = self._validate_filter_against_selection(args, selection)
+            if validation_error:
+                return {
+                    "success": False,
+                    "error": validation_error
+                }
+
         page = 0
+        items = []
         while True:
             op = Operation(Query)
             root_field = getattr(op, root)(page=page)
@@ -26,19 +38,42 @@ class GraphQLQueryExecutor:
             else:
                 self._apply_selection(root_field, selection)
             response = self._client.execute_query(op)
-            if(response['success'] == False):
+            if response["success"] == False:
                 return response
             data = response["data"]
             if not data[root]:
-                return []
-            items = data[root]
-            if args is None:
-                return items
+                break
             else:
-                filtered_items = [s for s in items if self._matches_filter(s, args)]
-                if len(filtered_items) > 0:
-                    return filtered_items
                 page += 1
+                items.extend(data[root])
+        if args is None:
+            return items
+        else:
+            filtered_items = [s for s in items if self._matches_filter(s, args)]
+            if len(filtered_items) > 0:
+                return filtered_items
+
+
+    def _validate_filter_against_selection(self, filt: dict, selection: dict, path: str = "") -> str:
+        for field, condition in filt.items():
+            current_path = f"{path}.{field}" if path else field
+
+            # Check if field exists in selection
+            if field not in selection:
+                return f"Filter field '{current_path}' is not in the selection. Please include it in the query selection."
+
+            # If condition is a nested dict (for filtering nested objects), validate recursively
+            if isinstance(condition, dict):
+                # The selection for this field should also be a dict
+                if not isinstance(selection[field], dict):
+                    return f"Filter field '{current_path}' is trying to filter a nested object, but the selection doesn't include nested fields."
+
+                # Recursively validate nested filters
+                nested_error = self._validate_filter_against_selection(condition, selection[field], current_path)
+                if nested_error:
+                    return nested_error
+
+        return None
 
     def _apply_selection(self, field_obj, selection: dict):
         for name, sub in selection.items():
@@ -54,7 +89,7 @@ class GraphQLQueryExecutor:
                 obj.get(field) if isinstance(obj, dict) else getattr(obj, field, None)
             )
 
-            if isinstance(condition, tuple):
+            if isinstance(condition, list) and len(condition) == 2:
                 op, expected = condition
                 if not self._compare(value, op, expected):
                     return False
@@ -74,33 +109,34 @@ class GraphQLQueryExecutor:
                     return False
         return True
 
+    ORDER = {"S": 6, "A": 5, "B": 4, "C": 3, "D": 2, "E": 1, "NONE": 0}
     def _coerce_number(self, x: Any) -> Any:
+        if x is None:
+            return math.nan
         if isinstance(x, (int, float)):
             return x
         if isinstance(x, str):
-            try:
-                return int(x)
-            except ValueError:
-                try:
-                    return float(x)
-                except ValueError:
-                    return x
+            if x in self.ORDER:
+                return self.ORDER[x]
+            else: 
+                return math.nan
         return x
 
     def _compare(self, value: Any, op: str, expected: Any) -> bool:
-        def fuzzy_contains(search_term: str, items_list: list, threshold: int = 90) -> bool:
+        def fuzzy_contains(
+            search_term: str, items_list: list, threshold: int = 90
+        ) -> bool:
             if not items_list:
                 return False
-            
+
             result = process.extractOne(
                 search_term,
                 items_list,
                 scorer=fuzz.partial_ratio,
-                score_cutoff=threshold
+                score_cutoff=threshold,
             )
-            
-            return result is not None
 
+            return result is not None
 
         if op == "eq":
             return fuzz.partial_ratio(value, expected) >= 90
@@ -119,7 +155,7 @@ class GraphQLQueryExecutor:
         if op == "lte":
             return v_num <= e_num
 
-        if op == "contains":
+        if op == "contains" or op == "in":
             return fuzzy_contains(value, expected)
 
         raise ValueError(f"Unknown operator: {op}")
