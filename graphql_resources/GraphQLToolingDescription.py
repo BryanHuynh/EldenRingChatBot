@@ -1,6 +1,6 @@
 from marshmallow import pprint
 import sgqlc
-from .my_schema import (
+from my_schema import (
     Query,
     AttributeEntry,
     ScalingEntry,
@@ -141,7 +141,8 @@ Provide the response in JSON format based on the information and schema provided
         lines: list[str] = []
         lines.append("Available Root Fields:")
         for root in self.root_fields:
-            lines.append(f"- {root}")
+            name = getattr(self.query, root).graphql_name
+            lines.append(f"- {name}")
 
         lines.append("\nType Fields:")
         for type_name, fields in self.type_fields.items():
@@ -162,9 +163,10 @@ Provide the response in JSON format based on the information and schema provided
         roots = self.get_root_fields()
         root_attributes = {}
         for root in roots:
+            root_graphql_name = getattr(Query, root).graphql_name
             gql_type = self.__unwrap(getattr(Query, root).type)
             type_dict = self.__type_to_dict(gql_type)
-            root_attributes[root] = type_dict
+            root_attributes[root_graphql_name] = type_dict
 
         for entry in self.entries:
             gql_type = self.__unwrap(entry)
