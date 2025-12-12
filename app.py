@@ -1,3 +1,4 @@
+import os
 import uvicorn
 from Logger import Logger
 from typing import Any, Optional
@@ -21,7 +22,7 @@ from graphql_resources.my_schema import (
 import json
 
 
-mcp = FastMCP("DocumentMCP")
+mcp = FastMCP("Elden Ring Companion")
 graphql_client = GraphQLClient(eldenring_api_host)
 graphql_tooling_description = GraphQLToolingDescription(
     Query,
@@ -69,24 +70,7 @@ def query_elden_ring_graphql(
 
 
 if __name__ == "__main__":
-    # print(query_elden_ring_graphql(
-    #     root="location",
-    #     args={"region": ["eq", "Limgrave"]},
-    #     selection=None
-    # ))
-    mcp.run()
-
-# {
-#   "region": [
-#     "eq",
-#     "Limgrave"
-#   ]
-# }
-
-
-# {
-#   "id": null,
-#   "name": null,
-#   "description": null,
-#   "region": null
-# }
+    log = Logger()
+    log.info("MCP Server started successfully")
+    log.info(f"Current working directory: {os.getcwd()}")
+    mcp.run(transport="stdio") 

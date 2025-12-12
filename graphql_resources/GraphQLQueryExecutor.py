@@ -48,23 +48,26 @@ class GraphQLQueryExecutor:
             if len(filtered_items) > 0:
                 return filtered_items
 
-
-    def _validate_filter_against_selection(self, filt: dict, selection: dict, path: str = "") -> str:
+    def _validate_filter_against_selection(
+        self, filt: dict, selection: dict, path: str = ""
+    ) -> str:
         for field, condition in filt.items():
             current_path = f"{path}.{field}" if path else field
 
-            # Check if field exists in selection
             if field not in selection:
-                raise ValueError(f"Filter field '{current_path}' is not in the selection. Please include it in the query selection.")
+                raise ValueError(
+                    f"Filter field '{current_path}' is not in the selection. Please include it in the query selection."
+                )
 
-            # If condition is a nested dict (for filtering nested objects), validate recursively
             if isinstance(condition, dict):
-                # The selection for this field should also be a dict
                 if not isinstance(selection[field], dict):
-                    raise ValueError(f"Filter field '{current_path}' is trying to filter a nested object, but the selection doesn't include nested fields.")
+                    raise ValueError(
+                        f"Filter field '{current_path}' is trying to filter a nested object, but the selection doesn't include nested fields."
+                    )
 
-                # Recursively validate nested filters
-                nested_error = self._validate_filter_against_selection(condition, selection[field], current_path)
+                nested_error = self._validate_filter_against_selection(
+                    condition, selection[field], current_path
+                )
                 if nested_error:
                     raise ValueError(nested_error)
 
@@ -105,6 +108,7 @@ class GraphQLQueryExecutor:
         return True
 
     ORDER = {"S": 6, "A": 5, "B": 4, "C": 3, "D": 2, "E": 1, "NONE": 0}
+
     def _coerce_number(self, x: Any) -> Any:
         if x is None:
             return math.nan
@@ -113,7 +117,7 @@ class GraphQLQueryExecutor:
         if isinstance(x, str):
             if x in self.ORDER:
                 return self.ORDER[x]
-            else: 
+            else:
                 return math.nan
         return x
 
@@ -151,6 +155,10 @@ class GraphQLQueryExecutor:
             return v_num <= e_num
 
         if op == "contains" or op == "in":
-            return fuzzy_contains(value, expected)
+            if isinstance(expected, list):
+                return fuzzy_contains(value, expected)
+            return fuzz.partial_ratio(value, expected) >= 90
+            
+            
 
         raise ValueError(f"Unknown operator: {op}")

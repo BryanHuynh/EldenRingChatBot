@@ -1,7 +1,15 @@
 import logging
+from config import log_file_path
 
 class Logger:
-    def __init__(self, filename: str = "./mcp_debug.log"):
+    def __init__(self, filename: str = None):
+        if filename is None:
+            if log_file_path:
+                filename = log_file_path
+            else:
+                script_dir = os.path.dirname(os.path.abspath(__file__))
+                filename = os.path.join(script_dir, "mcp_debug.log")
+            
         self.logger = logging.getLogger("mcp_logger")
         self.logger.setLevel(logging.DEBUG)
 

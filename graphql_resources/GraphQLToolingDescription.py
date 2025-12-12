@@ -43,13 +43,13 @@ Selection syntax:
     - None → select that scalar field
     - another object → select nested fields on that object
  - the following comparison operators are supported in "args":
-    - "eq": equal to
+    - "eq": equal to (uses fuzzy matching for strings by default, use when expecting a single result)
     - "neq": not equal to
     - "lt": less than
     - "lte": less than or equal to
     - "gt": greater than
     - "gte": greater than or equal to
-    - "contains": value contains substring (for strings)
+    - "contains": value contains substring (for strings). Only use when expecting multiple results.
     - "in": value is in list (for strings)
  - if no selection is given, all fields will be selected by default.
  
