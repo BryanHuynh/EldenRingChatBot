@@ -1,10 +1,16 @@
+from dataclasses import dataclass
 import os
 import html2text
 import requests
 from langchain_core.documents import Document
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
+from config import wiki_markdown_directory
 
-
+@dataclass
+class WikiLinkItem:
+    title: str
+    href: str
+    
 class Html2TextLoader:
     def __init__(
         self, web_paths: list[str], remove_selectors=[], markdown_storage_path=None
@@ -19,6 +25,33 @@ class Html2TextLoader:
         self.markdown_storage_path = (
             markdown_storage_path if markdown_storage_path else "./markdown_files"
         )
+        
+    def find_wiki_links(
+        self, content: Tag, selector=".wiki_link"
+    ) -> list[WikiLinkItem]:
+        links = []
+        for element in content.select(selector=selector):
+            title = (
+                element.__getattr__("title")
+                if element.__getattr__("title")
+                else element.get_text()
+            )
+            href = element.attrs["href"] if element.attrs["href"] else None
+            record = WikiLinkItem(title.strip(), href)
+            if(record not in links):
+                links.append(record)
+        return links
+
+    def embed_video_links(self, content: Tag, selector=".youtube"):
+        video_links = []
+        for element in content.select(selector=selector):
+            id = element.attrs["id"] if element.attrs["id"] else None
+            if id:
+                youtube_link = f"https://www.youtube.com/watch?v={id}"
+                element.append(youtube_link)
+                video_links.append(youtube_link)
+        return video_links
+
 
     def load(self) -> list[Document]:
         docs = []
@@ -45,15 +78,14 @@ class Html2TextLoader:
                     for tag in content(["script", "style", "nav", "footer"]):
                         tag.decompose()
 
-                    video_links = content.find_all(
-                        "div", {"class": "youtube youtubebuildembed"}
-                    )
-                    for video_link in video_links:
-                        id = video_link.attrs["id"]
-                        youtube_link = f"https://www.youtube.com/watch?v={id}"
-                        video_link.append(youtube_link)
+                    wiki_links = self.find_wiki_links(content)
+                    video_links = self.embed_video_links(content)
 
                     markdown = self.h.handle(str(content))
+
+                    markdown += "## Links to related terms in article \n"
+                    for wiki_link in wiki_links:
+                        markdown += f"[{wiki_link.title}]({wiki_link.href}) \n"
 
                     title = soup.find("h1")
                     title_text = title.get_text(strip=True) if title else ""
@@ -80,3 +112,9 @@ class Html2TextLoader:
         return docs
 
 
+if __name__ == "__main__":
+    Html2TextLoader(
+        ["https://eldenring.wiki.fextralife.com/Black+Knight+Edredd", "https://eldenring.wiki.fextralife.com/Spirit+Ashes"],
+        markdown_storage_path=wiki_markdown_directory,
+        remove_selectors=["#tagged-pages-container"],
+    ).load()
