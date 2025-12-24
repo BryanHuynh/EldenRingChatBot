@@ -6,3 +6,4 @@ mcp_debug.log
 __pycache__/
 elden_ring_wiki/tools/markdown_files/*
 demo.md
+elden_ring_wiki/tools/vectorstore

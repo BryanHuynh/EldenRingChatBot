@@ -1,21 +1,30 @@
 from dataclasses import dataclass
+import json
 import os
+import sys
 import html2text
 import requests
 from langchain_core.documents import Document
 from bs4 import BeautifulSoup, Tag
-from config import wiki_markdown_directory
+
 
 @dataclass
 class WikiLinkItem:
     title: str
     href: str
-    
+
+
 class Html2TextLoader:
     def __init__(
-        self, web_paths: list[str], remove_selectors=[], markdown_storage_path=None
+        self,
+        web_paths: list[str] = [],
+        load_from_local=False,
+        remove_selectors=[],
+        markdown_storage_path=None,
+        disable_links=False,
     ):
         self.urls = web_paths
+        self.load_from_local = load_from_local
         self.h = html2text.HTML2Text()
         self.h.ignore_links = True
         self.h.ignore_images = True
@@ -25,7 +34,8 @@ class Html2TextLoader:
         self.markdown_storage_path = (
             markdown_storage_path if markdown_storage_path else "./markdown_files"
         )
-        
+        self.disable_links = disable_links
+
     def find_wiki_links(
         self, content: Tag, selector=".wiki_link"
     ) -> list[WikiLinkItem]:
@@ -38,7 +48,7 @@ class Html2TextLoader:
             )
             href = element.attrs["href"] if element.attrs["href"] else None
             record = WikiLinkItem(title.strip(), href)
-            if(record not in links):
+            if record not in links:
                 links.append(record)
         return links
 
@@ -52,9 +62,58 @@ class Html2TextLoader:
                 video_links.append(youtube_link)
         return video_links
 
+    def save_documents(self, documents: list[Document]):
+        for document in documents:
+            with open(
+                os.path.join(
+                    self.markdown_storage_path, f"{document.metadata['title']}.md"
+                ),
+                "w+",
+                encoding="utf-8",
+                errors="replace",
+            ) as page_content_file:
+                page_content_file.write(document.page_content)
+
+                metadata = {
+                    "md_file": document.metadata["title"] + ".md",
+                    "metadata": document.metadata,
+                }
+                with open(
+                    os.path.join(
+                        self.markdown_storage_path, f"{document.metadata['title']}.json"
+                    ),
+                    "w+",
+                    encoding="utf-8",
+                    errors="replace",
+                ) as metadata_file:
+                    json.dump(metadata, metadata_file, indent=4)
+
+    def load_documents_from_local(self) -> list[Document]:
+        docs = []
+        metadata_files = [
+            f
+            for f in os.listdir(self.markdown_storage_path)
+            if os.path.isfile and f.endswith(".json")
+        ]
+        for metadata_file in metadata_files:
+            with open(
+                os.path.join(self.markdown_storage_path, metadata_file), "r", encoding="utf-8"
+            ) as metadata_file:
+                metadata = json.load(metadata_file)
+                with open(
+                    os.path.join(self.markdown_storage_path, metadata["md_file"]), "r", encoding="utf-8"
+                ) as page_content_file:
+                    doc = Document(
+                        page_content=page_content_file.read(),
+                        metadata=metadata["metadata"],
+                    )
+                    docs.append(doc)
+        return docs
 
     def load(self) -> list[Document]:
         docs = []
+        if self.load_from_local:
+            docs = self.load_documents_from_local()
 
         for url in self.urls:
             try:
@@ -79,42 +138,23 @@ class Html2TextLoader:
                         tag.decompose()
 
                     wiki_links = self.find_wiki_links(content)
-                    video_links = self.embed_video_links(content)
+                    if not self.disable_links:
+                        video_links = self.embed_video_links(
+                            content, self.disable_links
+                        )
 
-                    markdown = self.h.handle(str(content))
-
-                    markdown += "## Links to related terms in article \n"
-                    for wiki_link in wiki_links:
-                        markdown += f"[{wiki_link.title}]({wiki_link.href}) \n"
+                    markdown = self.h.handle(str(content))                 
 
                     title = soup.find("h1")
-                    title_text = title.get_text(strip=True) if title else ""
+                    title_text = title.get_text().split("|")[0].strip() if title else ""
 
                     docs.append(
                         Document(
                             page_content=markdown,
-                            metadata={"source": url, "title": title_text},
+                            metadata={"source": url, "title": title_text, "wiki_links": [link.__dict__ for link in wiki_links]},
                         )
                     )
-                    with open(
-                        os.path.join(
-                            self.markdown_storage_path, f"{url.split('/')[-1]}.md"
-                        ),
-                        "w+",
-                        encoding="utf-8",
-                        errors="replace",
-                    ) as f:
-                        f.write(markdown)
-
             except Exception as e:
                 print(f"✗ Error: {e}")
-
+        self.save_documents(docs)
         return docs
-
-
-if __name__ == "__main__":
-    Html2TextLoader(
-        ["https://eldenring.wiki.fextralife.com/Black+Knight+Edredd", "https://eldenring.wiki.fextralife.com/Spirit+Ashes"],
-        markdown_storage_path=wiki_markdown_directory,
-        remove_selectors=["#tagged-pages-container"],
-    ).load()
