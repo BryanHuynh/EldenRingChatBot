@@ -97,11 +97,15 @@ class Html2TextLoader:
         ]
         for metadata_file in metadata_files:
             with open(
-                os.path.join(self.markdown_storage_path, metadata_file), "r", encoding="utf-8"
+                os.path.join(self.markdown_storage_path, metadata_file),
+                "r",
+                encoding="utf-8",
             ) as metadata_file:
                 metadata = json.load(metadata_file)
                 with open(
-                    os.path.join(self.markdown_storage_path, metadata["md_file"]), "r", encoding="utf-8"
+                    os.path.join(self.markdown_storage_path, metadata["md_file"]),
+                    "r",
+                    encoding="utf-8",
                 ) as page_content_file:
                     doc = Document(
                         page_content=page_content_file.read(),
@@ -110,12 +114,16 @@ class Html2TextLoader:
                     docs.append(doc)
         return docs
 
-    def load(self) -> list[Document]:
+    def load(self, urls: list[str] = None) -> list[Document]:
         docs = []
         if self.load_from_local:
             docs = self.load_documents_from_local()
 
-        for url in self.urls:
+        if urls is None:
+            urls = self.urls
+
+        for url in urls:
+            print(f"Loading {url}")
             try:
                 html = requests.get(url).text
                 soup = BeautifulSoup(html, "html.parser")
@@ -143,7 +151,7 @@ class Html2TextLoader:
                             content, self.disable_links
                         )
 
-                    markdown = self.h.handle(str(content))                 
+                    markdown = self.h.handle(str(content))
 
                     title = soup.find("h1")
                     title_text = title.get_text().split("|")[0].strip() if title else ""
@@ -151,7 +159,11 @@ class Html2TextLoader:
                     docs.append(
                         Document(
                             page_content=markdown,
-                            metadata={"source": url, "title": title_text, "wiki_links": [link.__dict__ for link in wiki_links]},
+                            metadata={
+                                "source": url,
+                                "title": title_text,
+                                "wiki_links": [link.__dict__ for link in wiki_links],
+                            },
                         )
                     )
             except Exception as e:
