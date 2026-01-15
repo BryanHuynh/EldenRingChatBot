@@ -6,6 +6,7 @@ import html2text
 import requests
 from langchain_core.documents import Document
 from bs4 import BeautifulSoup, Tag
+from tqdm import tqdm
 
 
 @dataclass
@@ -95,7 +96,8 @@ class Html2TextLoader:
             for f in os.listdir(self.markdown_storage_path)
             if os.path.isfile and f.endswith(".json")
         ]
-        for metadata_file in metadata_files:
+        for metadata_file in tqdm(metadata_files, desc="Loading local documents", file=sys.stdout):
+            tqdm.write(f"Loading {metadata_file}")
             with open(
                 os.path.join(self.markdown_storage_path, metadata_file),
                 "r",

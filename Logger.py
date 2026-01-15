@@ -1,5 +1,6 @@
 import logging
 from config import log_file_path
+import os
 
 class Logger:
     def __init__(self, filename: str = None):

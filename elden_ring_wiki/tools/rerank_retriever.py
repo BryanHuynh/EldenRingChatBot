@@ -9,3 +9,4 @@ def rerank_retriever(retriever: RetrieverLike, k=5) -> ContextualCompressionRetr
         base_retriever=retriever,
     )
     return compression_retriever
+
