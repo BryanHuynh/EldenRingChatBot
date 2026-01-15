@@ -4,6 +4,6 @@
 mcp_debug.log
 *.ipynb
 __pycache__/
-elden_ring_wiki/tools/markdown_files/*
+elden_ring_wiki/markdown_files/*
 demo.md
-elden_ring_wiki/tools/vectorstore
+elden_ring_wiki/vectorstore
