@@ -3,7 +3,7 @@ from .remove_empty_sections import remove_empty_sections
 from .remove_gallery_content import remove_gallery_content
 from .remove_multiple_empty_lines import remove_multiple_empty_lines
 from .remove_video_guide import remove_video_guide
-from .FormatBuilder import FormatBuilder
+from .format_builder import FormatBuilder
 
 __all__ = [
     "append_h4_to_subheaders",

@@ -1,5 +1,5 @@
 
-from elden_ring_wiki.tools.splitters.WikiChildSplitter import WikiChildSplitter
+from elden_ring_wiki.tools.splitters.md_splitter import WikiChildSplitter
 
 
 

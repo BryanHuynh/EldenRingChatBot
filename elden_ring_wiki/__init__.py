@@ -1,1 +1,0 @@
-# Elden Ring Wiki package

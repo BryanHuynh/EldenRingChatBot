@@ -1,6 +1,6 @@
 # Text splitters for Elden Ring Wiki
-from .WikiChildSplitter import WikiChildSplitter
+from .md_splitter import MDSplitter
 
 __all__ = [
-    "WikiChildSplitter"
+    "MDSplitter"
 ]

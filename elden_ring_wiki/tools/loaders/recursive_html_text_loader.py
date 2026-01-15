@@ -1,4 +1,4 @@
-from .Html2TextLoader import Html2TextLoader
+from .html_to_text_loader import Html2TextLoader
 from langchain_core.documents import Document
 import urllib.parse
 

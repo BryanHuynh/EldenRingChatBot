@@ -6,7 +6,7 @@ from langchain_text_splitters import (
 )
 
 
-class WikiChildSplitter(TextSplitter):
+class MDSplitter(TextSplitter):
     def __init__(self, chunk_size: int = 2000, chunk_overlap_ratio: float = 0.2):
         super().__init__(chunk_size=chunk_size, chunk_overlap=int(chunk_size * chunk_overlap_ratio))
 

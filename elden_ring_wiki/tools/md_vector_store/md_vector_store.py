@@ -9,12 +9,12 @@ from langchain_classic.storage import create_kv_docstore
 from langchain_classic.retrievers import ParentDocumentRetriever
 from typing import Optional
 from tqdm import tqdm
-from elden_ring_wiki.tools.retrievers.RetrieverBuilder import RetrieverBuilder
-from .splitters.WikiChildSplitter import WikiChildSplitter
-from .formatters import FormatBuilder
+from ..retrievers.RetrieverBuilder import RetrieverBuilder
+from ..splitters.md_splitter import MDSplitter
+from ..formatters import FormatBuilder
 
 
-class WikiVectorStore:
+class MDVectorStore:
     def __init__(
         self,
         persist_directory: str,
@@ -42,7 +42,7 @@ class WikiVectorStore:
             self.parent_retriever = ParentDocumentRetriever(
                 vectorstore=self.vectorstore,
                 docstore=self.parent_store,
-                child_splitter=WikiChildSplitter(),
+                child_splitter=MDSplitter(),
             )
         self._llm = None
 
