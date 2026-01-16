@@ -94,10 +94,11 @@ class Html2TextLoader:
         metadata_files = [
             f
             for f in os.listdir(self.markdown_storage_path)
-            if os.path.isfile and f.endswith(".json")
+            if os.path.isfile(os.path.join(self.markdown_storage_path, f)) and f.endswith(".json")
         ]
-        for metadata_file in tqdm(metadata_files, desc="Loading local documents", file=sys.stdout):
-            tqdm.write(f"Loading {metadata_file}")
+        pbar = tqdm(metadata_files, desc="Loading local documents")
+        for metadata_file in pbar:
+            pbar.set_description(f"Loading {metadata_file:<75}")
             with open(
                 os.path.join(self.markdown_storage_path, metadata_file),
                 "r",
