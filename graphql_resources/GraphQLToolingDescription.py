@@ -1,6 +1,5 @@
-from marshmallow import pprint
 import sgqlc
-from my_schema import (
+from .my_schema import (
     Query,
     AttributeEntry,
     ScalingEntry,
@@ -26,7 +25,6 @@ class GraphQLToolingDescription:
         self.enum_values = self.get_enum_values(self.enums) or {}
 
     def build_tooling_description(self) -> str:
-        overview = self.build_schema_overview()
         examples = self.build_examples()
         base = f"""
 Run Dynamic queries against Elden Ring API using a JSON-based query format.
@@ -59,9 +57,6 @@ Args syntax:
     - values are either:
         - another object -> selected nested fields on that object
         - a tuple of (operator, value) → comparison check
-        
-Here is the schema overview:
-{overview}
 
 Here are some example queries you can use:
 {examples}
@@ -136,25 +131,19 @@ Provide the response in JSON format based on the information and schema provided
                 zip(examples, example_descriptions)
             )
         )
-
-    def build_schema_overview(self) -> str:
-        lines: list[str] = []
-        lines.append("Available Root Fields:")
+        
+    def avaiable_root_fields(self) -> list[str]:
+        fields: list[str] = []
         for root in self.root_fields:
             name = getattr(self.query, root).graphql_name
-            lines.append(f"- {name}")
-
-        lines.append("\nType Fields:")
-        for type_name, fields in self.type_fields.items():
-            lines.append(f"{type_name}:")
-            for field_name, field_type in fields.items():
-                lines.append(f"  - {field_name}: {field_type}")
-
-        lines.append("\nEnum Values:")
-        for enum_name, values in self.enum_values.items():
-            lines.append(f"{enum_name}: {', '.join(values)}")
-
-        return "\n".join(lines)
+            fields.append(name)
+        return fields
+    
+    def types_for_root(self, root: str) -> dict[str, str]:
+        fields: dict[str, str] = {}
+        for field in self.type_fields[root]:
+            fields[field] = self.type_fields[root][field]
+        return fields
 
     def get_root_fields(self) -> list[str]:
         return [x for x in Query.__field_names__ if not x.startswith("get_")]
