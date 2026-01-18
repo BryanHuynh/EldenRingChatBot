@@ -1,7 +1,6 @@
 import os
-import uvicorn
 from Logger import Logger
-from typing import Any, Optional
+from typing import Optional
 from pydantic import Field
 from graphql_resources import (
     GraphQLClient,
@@ -9,7 +8,6 @@ from graphql_resources import (
     GraphQLToolingDescription,
 )
 from mcp.server.fastmcp import FastMCP
-from pprint import pprint
 from config import eldenring_api_host
 from graphql_resources.my_schema import (
     Query,
