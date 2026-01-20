@@ -17,14 +17,14 @@ class MDVectorStore:
         persist_directory: str,
         collection_name: str,
         embedding_function: str = "nomic-embed-text",
-        base_url: str = "http://localhost:11434",
-        llm_model: str = "llama3.2",
+        ollama_base_url: str = "http://127.0.0.1:11434",
         format_documents: bool = True,
     ):
         self.persist_directory = persist_directory
         self.collection_name = collection_name
-        self.embeddings = OllamaEmbeddings(model=embedding_function, base_url=base_url)
-        self.llm_model = llm_model
+        self.embeddings = OllamaEmbeddings(
+            model=embedding_function, base_url=ollama_base_url
+        )
         self.vectorstore = self.get_or_create_vectorstore()
         self.format_documents = format_documents
         self.parent_doc_store_path = os.path.join(persist_directory, "parent_docstore")
