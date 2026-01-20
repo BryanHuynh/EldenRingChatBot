@@ -63,12 +63,33 @@ def query_elden_ring_graphql(
     except Exception as e:
         log.error("Error building operation: %s", e)
         return {"success": False, "error": str(e)}
-    
+
     return json.dumps(result, indent=2)
 
+
+RESOURCE_MEMORY = {}
+
+
+def register_root_resource(root: str):
+    @mcp.resource(
+        f"elden://{root}",
+        description=f"Resource for Elden Ring {root} data",
+        name=f"{root}",
+    )
+    async def _resource():
+        if root in RESOURCE_MEMORY:
+            return RESOURCE_MEMORY[root]
+        executor = GraphQLQueryExecutor(graphql_client)
+        result = executor.build_operation(root, {"name": None}, {})
+        RESOURCE_MEMORY[root] = result
+        return result
+
+
+for root_field in graphql_tooling_description.get_root_fields():
+    register_root_resource(root_field)
 
 if __name__ == "__main__":
     log = Logger()
     log.info("MCP Server started successfully")
     log.info(f"Current working directory: {os.getcwd()}")
-    mcp.run(transport="stdio") 
+    mcp.run(transport="stdio")

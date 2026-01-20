@@ -1,6 +1,6 @@
 from marshmallow import pprint
 import sgqlc
-from my_schema import (
+from .my_schema import (
     Query,
     AttributeEntry,
     ScalingEntry,

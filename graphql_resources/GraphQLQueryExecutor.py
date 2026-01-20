@@ -33,7 +33,7 @@ class GraphQLQueryExecutor:
             else:
                 self._apply_selection(root_field, selection)
             response = self._client.execute_query(op)
-            if response["success"] == False:
+            if not response["success"]:
                 return response
             data = response["data"]
             if not data[root]:
